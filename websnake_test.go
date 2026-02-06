@@ -44,6 +44,52 @@ func TestNewWebSnake(t *testing.T) {
 }
 
 func TestHandleConfigUpdate(t *testing.T) {
+	t.Run("missing content-type header", func(t *testing.T) {
+		v := viper.New()
+		v.Set("test.key", "original")
+		ws := NewWebSnake(WithViper(v))
+
+		reqBody := ConfigUpdateRequest{
+			Setting: "test.key",
+			Value:   "updated",
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		// Intentionally not setting Content-Type header
+		w := httptest.NewRecorder()
+
+		ws.HandleConfigUpdate(w, req)
+
+		if w.Code != http.StatusUnsupportedMediaType {
+			t.Errorf("expected status 415, got %d", w.Code)
+		}
+		bodyStr := w.Body.String()
+		if !bytes.Contains([]byte(bodyStr), []byte("Content-Type")) {
+			t.Error("expected 'Content-Type' in error message")
+		}
+	})
+
+	t.Run("incorrect content-type header", func(t *testing.T) {
+		v := viper.New()
+		v.Set("test.key", "original")
+		ws := NewWebSnake(WithViper(v))
+
+		reqBody := ConfigUpdateRequest{
+			Setting: "test.key",
+			Value:   "updated",
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "text/plain")
+		w := httptest.NewRecorder()
+
+		ws.HandleConfigUpdate(w, req)
+
+		if w.Code != http.StatusUnsupportedMediaType {
+			t.Errorf("expected status 415, got %d", w.Code)
+		}
+	})
+
 	t.Run("successful update", func(t *testing.T) {
 		v := viper.New()
 		v.Set("test.key", "original")
@@ -55,6 +101,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -80,6 +127,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 	t.Run("invalid JSON body", func(t *testing.T) {
 		ws := NewWebSnake()
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader([]byte("invalid json")))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -99,6 +147,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -118,6 +167,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -141,6 +191,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -165,6 +216,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -193,6 +245,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -219,6 +272,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -251,6 +305,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -279,6 +334,7 @@ func TestHandleConfigUpdate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/config/update", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		ws.HandleConfigUpdate(w, req)
@@ -554,6 +610,7 @@ func TestConfigGetResponse_JSON(t *testing.T) {
 func TestHandleConfigUpdate_EmptyBody(t *testing.T) {
 	ws := NewWebSnake()
 	req := httptest.NewRequest(http.MethodPost, "/config/update", &errorReader{})
+	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	ws.HandleConfigUpdate(w, req)

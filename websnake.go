@@ -74,8 +74,10 @@ type ConfigGetResponse struct {
 
 // HandleConfigUpdate is an HTTP handler for updating configuration settings.
 // It expects a JSON payload with "setting" and "value" fields.
+// The request must have Content-Type: application/json header.
 //
 // The handler performs the following checks:
+//   - Validates Content-Type header is application/json
 //   - Validates the JSON request body
 //   - Checks if the setting exists (if allowMissingKeys is false)
 //   - Enforces type checking (if enforceTypeChecks is true)
@@ -87,15 +89,23 @@ type ConfigGetResponse struct {
 //   - 200 OK with the updated setting on success
 //   - 400 Bad Request on invalid JSON, type mismatch, or validation failure
 //   - 404 Not Found if the setting doesn't exist and allowMissingKeys is false
+//   - 415 Unsupported Media Type if Content-Type is not application/json
 //
 // Example request:
 //
 //	POST /config/update
+//	Content-Type: application/json
+//
 //	{
 //	  "setting": "app.port",
 //	  "value": 8080
 //	}
 func (ws *WebSnake) HandleConfigUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
 	var req ConfigUpdateRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
