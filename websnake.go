@@ -23,14 +23,11 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-
-	"github.com/spf13/viper"
 )
 
 // WebSnake provides HTTP handlers for managing configuration settings dynamically.
 // It wraps a Viper instance and provides configurable validation and update hooks.
 type WebSnake struct {
-	viper   *viper.Viper
 	options *Options
 }
 
@@ -186,7 +183,13 @@ func (ws *WebSnake) HandleConfigGet(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		parts := strings.Split(r.URL.Path, "/")
-		settings = []string{parts[len(parts)-1]}
+
+		setting := parts[len(parts)-1]
+		if setting == "" {
+			settings = ws.options.viper.AllKeys()
+		} else {
+			settings = []string{parts[len(parts)-1]}
+		}
 	}
 
 	res := make([]ConfigGetResponse, 0, len(settings))
@@ -212,4 +215,13 @@ func (ws *WebSnake) HandleConfigGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
+}
+
+func (ws *WebSnake) Handler() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("PUT /config/update", ws.HandleConfigUpdate)
+	mux.HandleFunc("GET /config/get/", ws.HandleConfigGet)
+
+	return mux
 }
